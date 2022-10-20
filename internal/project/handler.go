@@ -1,4 +1,4 @@
-package feature
+package project
 
 import (
 	"encoding/json"
@@ -19,45 +19,43 @@ type Handler struct {
 	service Service
 }
 
-func (h Handler) ListFeatures(w http.ResponseWriter, r *http.Request) {
-	fs, err := h.service.store.findAllFeatures(r.Context())
+func (h Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
+	ps, err := h.service.store.findAllProjects(r.Context())
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).
-			Msg("list features")
+			Msg("list projects")
 		render.Error(w, err)
 		return
 	}
 
-	render.JSON(w, fs)
+	render.JSON(w, ps)
 }
 
-func (h Handler) GetFeature(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "featureId"))
+func (h Handler) GetProject(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "projectId"))
 	if err != nil {
 		render.Error(w, render.TagBadRequest(err))
 		return
 	}
 
-	f, err := h.service.store.findFeature(r.Context(), id)
+	p, err := h.service.store.findProject(r.Context(), id)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).
-			Msg("get feature")
+			Msg("get project")
 		render.Error(w, err)
 		return
 	}
 
-	render.JSON(w, f)
+	render.JSON(w, p)
 }
 
-func (h Handler) SaveFeature(w http.ResponseWriter, r *http.Request) {
+func (h Handler) SaveProject(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		TechnicalName string  `json:"technicalName"`
-		DisplayName   *string `json:"displayName"`
-		Description   *string `json:"description"`
+		Name string `json:"name"`
 	}
 
 	dec := json.NewDecoder(r.Body)
@@ -67,15 +65,11 @@ func (h Handler) SaveFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.saveFeature(r.Context(), feature{
-		TechnicalName: req.TechnicalName,
-		DisplayName:   req.DisplayName,
-		Description:   req.Description,
-	}); err != nil {
+	if err := h.service.saveProject(r.Context(), project{Name: req.Name}); err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).
-			Msg("save feature")
+			Msg("save project")
 		render.Error(w, err)
 		return
 	}
@@ -83,18 +77,18 @@ func (h Handler) SaveFeature(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (h Handler) DeleteFeature(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(chi.URLParam(r, "featureId"))
+func (h Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
+	id, err := uuid.Parse(chi.URLParam(r, "projectId"))
 	if err != nil {
 		render.Error(w, render.TagBadRequest(err))
 		return
 	}
 
-	if err := h.service.store.deleteFeature(r.Context(), id); err != nil {
+	if err := h.service.store.deleteProject(r.Context(), id); err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).
-			Msg("delete feature")
+			Msg("delete project")
 		render.Error(w, err)
 		return
 	}

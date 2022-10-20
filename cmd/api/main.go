@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/hlog"
 
 	"github.com/ErnestsKalnins/0xff/internal/feature"
+	"github.com/ErnestsKalnins/0xff/internal/project"
 	"github.com/ErnestsKalnins/0xff/pkg/config"
 )
 
@@ -33,21 +34,35 @@ func main() {
 			Msg("ping database")
 	}
 
-	store := feature.NewStore(db)
-	service := feature.NewService(store)
-	handler := feature.NewHandler(service)
+	projectStore := project.NewStore(db)
+	projetService := project.NewService(projectStore)
+	projectHandler := project.NewHandler(projetService)
+
+	featureStore := feature.NewStore(db)
+	featureService := feature.NewService(featureStore)
+	featureHandler := feature.NewHandler(featureService)
 
 	r := chi.NewRouter()
 
 	r.Use(hlog.NewHandler(logger))
 
-	r.Route("/features", func(r chi.Router) {
-		r.Get("/", handler.ListFeatures)
-		r.Post("/", handler.SaveFeature)
+	r.Route("/projects", func(r chi.Router) {
+		r.Get("/", projectHandler.ListProjects)
+		r.Post("/", projectHandler.SaveProject)
 
-		r.Route("/{featureId}", func(r chi.Router) {
-			r.Get("/", handler.GetFeature)
-			r.Delete("/", handler.DeleteFeature)
+		r.Route("/{projectId}", func(r chi.Router) {
+			r.Get("/", projectHandler.GetProject)
+			r.Delete("/", projectHandler.DeleteProject)
+
+			r.Route("/features", func(r chi.Router) {
+				r.Get("/", featureHandler.ListFeatures)
+				r.Post("/", featureHandler.SaveFeature)
+
+				r.Route("/{featureId}", func(r chi.Router) {
+					r.Get("/", featureHandler.GetFeature)
+					r.Delete("/", featureHandler.DeleteFeature)
+				})
+			})
 		})
 	})
 

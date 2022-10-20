@@ -3,6 +3,10 @@ package feature
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+	"net/http"
+
 	"github.com/google/uuid"
 )
 
@@ -50,6 +54,16 @@ func (s Store) findAllFeatures(ctx context.Context) ([]feature, error) {
 	return fs, nil
 }
 
+type errNotFound struct {
+	id uuid.UUID
+}
+
+func (e errNotFound) Error() string {
+	return fmt.Sprintf("could not find feature by id %s", e.id)
+}
+
+func (e errNotFound) Code() int { return http.StatusNotFound }
+
 func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) {
 	f := feature{ID: id}
 	if err := s.db.QueryRowContext(
@@ -63,6 +77,9 @@ func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) 
 		&f.CreatedAt,
 		&f.UpdatedAt,
 	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errNotFound{id: id}
+		}
 		return nil, err
 	}
 
@@ -72,8 +89,8 @@ func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) 
 func (s Store) saveFeature(ctx context.Context, f feature) error {
 	_, err := s.db.ExecContext(
 		ctx,
-		`INSERT INTO features(technical_name,display_name,description,enabled) VALUES(?,?,?,?)`,
-		f.TechnicalName, f.DisplayName, f.Description, f.Enabled,
+		`INSERT INTO features (id, technical_name,display_name,description,enabled) VALUES (?,?,?,?,?)`,
+		f.ID, f.TechnicalName, f.DisplayName, f.Description, f.Enabled,
 	)
 	return err
 }

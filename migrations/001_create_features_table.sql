@@ -6,5 +6,5 @@ CREATE TABLE features
     description    TEXT,
     enabled        TINYINT NOT NULL DEFAULT 0,
     created_at     BIGINT NOT NULL,
-    updated_at     BIGINT NOT NULL,
+    updated_at     BIGINT NOT NULL
 );
