@@ -20,7 +20,13 @@ type Handler struct {
 }
 
 func (h Handler) ListFeatures(w http.ResponseWriter, r *http.Request) {
-	fs, err := h.service.store.findAllFeatures(r.Context())
+	projectID, err := uuid.Parse(chi.URLParam(r, "projectId"))
+	if err != nil {
+		render.Error(w, render.TagBadRequest(err))
+		return
+	}
+
+	fs, err := h.service.store.findAllProjectFeatures(r.Context(), projectID)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -54,6 +60,12 @@ func (h Handler) GetFeature(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h Handler) SaveFeature(w http.ResponseWriter, r *http.Request) {
+	projectID, err := uuid.Parse(chi.URLParam(r, "projectId"))
+	if err != nil {
+		render.Error(w, render.TagBadRequest(err))
+		return
+	}
+
 	var req struct {
 		TechnicalName string  `json:"technicalName"`
 		DisplayName   *string `json:"displayName"`
@@ -68,6 +80,7 @@ func (h Handler) SaveFeature(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.saveFeature(r.Context(), feature{
+		ProjectID:     projectID,
 		TechnicalName: req.TechnicalName,
 		DisplayName:   req.DisplayName,
 		Description:   req.Description,
