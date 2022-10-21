@@ -13,6 +13,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 
+	"github.com/ErnestsKalnins/0xff/internal/environment"
 	"github.com/ErnestsKalnins/0xff/internal/feature"
 	"github.com/ErnestsKalnins/0xff/internal/project"
 	"github.com/ErnestsKalnins/0xff/pkg/config"
@@ -42,6 +43,10 @@ func main() {
 	featureService := feature.NewService(featureStore)
 	featureHandler := feature.NewHandler(featureService)
 
+	environmentStore := environment.NewStore(db)
+	environmentService := environment.NewService(environmentStore)
+	environmentHandler := environment.NewHandler(environmentService)
+
 	r := chi.NewRouter()
 
 	r.Use(hlog.NewHandler(logger))
@@ -61,6 +66,16 @@ func main() {
 				r.Route("/{featureId}", func(r chi.Router) {
 					r.Get("/", featureHandler.GetFeature)
 					r.Delete("/", featureHandler.DeleteFeature)
+				})
+			})
+
+			r.Route("/environments", func(r chi.Router) {
+				r.Get("/", environmentHandler.ListEnvironments)
+				r.Post("/", environmentHandler.SaveEnvironment)
+
+				r.Route("/{environmentId}", func(r chi.Router) {
+					r.Get("/", environmentHandler.GetEnvironment)
+					r.Delete("/", environmentHandler.DeleteEnvironment)
 				})
 			})
 		})

@@ -21,7 +21,7 @@ type Store struct {
 func (s Store) findAllProjects(ctx context.Context) ([]project, error) {
 	rs, err := s.db.QueryContext(
 		ctx,
-		`SELECT id, name FROM projects`,
+		`SELECT id, name, created_at, updated_at FROM projects`,
 	)
 	if err != nil {
 		return nil, err
@@ -33,6 +33,8 @@ func (s Store) findAllProjects(ctx context.Context) ([]project, error) {
 		if err := rs.Scan(
 			&p.ID,
 			&p.Name,
+			&p.CreatedAt,
+			&p.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -65,8 +67,12 @@ func (s Store) findProject(ctx context.Context, id uuid.UUID) (*project, error) 
 	p := project{ID: id}
 	if err := s.db.QueryRowContext(
 		ctx,
-		`SELECT name FROM projects WHERE id = ?`,
-	).Scan(&p.Name); err != nil {
+		`SELECT name, created_at, updated_at FROM projects WHERE id = ?`,
+	).Scan(
+		&p.Name,
+		&p.CreatedAt,
+		&p.UpdatedAt,
+	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, errNotFound{id: id}
 		}
