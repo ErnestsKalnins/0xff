@@ -27,7 +27,7 @@ func (s Store) findAllProjects(ctx context.Context) ([]project, error) {
 		return nil, err
 	}
 
-	var ps []project
+	ps := []project{}
 	for rs.Next() {
 		var p project
 		if err := rs.Scan(
@@ -68,6 +68,7 @@ func (s Store) findProject(ctx context.Context, id uuid.UUID) (*project, error) 
 	if err := s.db.QueryRowContext(
 		ctx,
 		`SELECT name, created_at, updated_at FROM projects WHERE id = ?`,
+		id,
 	).Scan(
 		&p.Name,
 		&p.CreatedAt,
@@ -85,8 +86,8 @@ func (s Store) findProject(ctx context.Context, id uuid.UUID) (*project, error) 
 func (s Store) saveProject(ctx context.Context, p project) error {
 	_, err := s.db.ExecContext(
 		ctx,
-		`INSERT INTO projects (id, name) VALUES(?,?)`,
-		p.ID, p.Name,
+		`INSERT INTO projects (id, name, created_at, updated_at) VALUES(?,?,?,?)`,
+		p.ID, p.Name, p.CreatedAt, p.UpdatedAt,
 	)
 	return err
 }

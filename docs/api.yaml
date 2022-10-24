@@ -1,0 +1,305 @@
+openapi: 3.0.3
+info:
+  title: "0xff"
+  version: 0.0.4
+servers:
+  - url: http:localhost:8080/api/v1
+tags:
+  - name: project
+    description: Project info
+  - name: feature
+    description: Feature info
+  - name: environment
+    description: Environment info
+
+paths:
+  /projects:
+    get:
+      tags:
+        - project
+      summary: List projects.
+      responses:
+        200:
+          description: Successfully list projects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/project'
+        500:
+          $ref: '#/components/responses/error'
+    post:
+      tags:
+        - project
+      summary: Create new project.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+              required:
+                - name
+      responses:
+        201:
+          description: Successfully created new project.
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags:
+        - project
+      summary: Get a single project.
+      responses:
+        200:
+          description: Successfully retrieve project.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/project'
+        404:
+          $ref: '#/components/responses/error'
+        500:
+          $ref: '#/components/responses/error'
+    delete:
+      tags:
+        - project
+      summary: Delete project.
+      responses:
+        204:
+          description: Successfully delete project.
+        500:
+          $ref: '#/components/responses/error'
+  /projects/{projectId}/features:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags:
+        - feature
+      summary: List project features.
+      responses:
+        200:
+          description: Successfully retrieve all project features.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/feature'
+        500:
+          $ref: '#/components/responses/error'
+    post:
+      tags:
+        - feature
+      summary: Save new project feature.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                technicalName:
+                  type: string
+                displayName:
+                  type: string
+                description:
+                  type: string
+              required:
+                - technicalName
+      responses:
+        201:
+          description: Successfully save new project feature.
+        500:
+          $ref: '#/components/responses/error'
+  /projects/{projectId}/features/{featureId}:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+      - $ref: '#/components/parameters/featureId'
+    get:
+      tags:
+        - feature
+      summary: Get project feature.
+      responses:
+        200:
+          description: Successfully return project feature.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/feature'
+        404:
+          $ref: '#/components/responses/error'
+        500:
+          $ref: '#/components/responses/error'
+    delete:
+      tags:
+        - feature
+      summary: Delete project feature.
+      responses:
+        204:
+          description: Successfully delete project feature.
+        500:
+          $ref: '#/components/responses/error'
+  /projects/{projectId}/environments:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+    get:
+      tags:
+        - environment
+      summary: List all project environments.
+      responses:
+        200:
+          description: List of all project environments.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/environment'
+        500:
+          $ref: '#/components/responses/error'
+    post:
+      tags:
+        - environment
+      summary: Save new project environment.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+      responses:
+        201:
+          description: Successfully create new project environment.
+  /projects/{projectId}/environments/{environmentId}:
+    parameters:
+      - $ref: '#/components/parameters/projectId'
+      - $ref: '#/components/parameters/environmentId'
+    get:
+      tags:
+        - environment
+      summary: Get single project environment.
+      responses:
+        200:
+          description: List of all project environments.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/environment'
+        404:
+          $ref: '#/components/responses/error'
+        500:
+          $ref: '#/components/responses/error'
+    delete:
+      tags:
+        - environment
+      summary: Delete project environment.
+      responses:
+        204:
+          description: Successfully delete project environment.
+        500:
+          $ref: '#/components/responses/error'
+
+components:
+  responses:
+    error:
+      description: An error returned by server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+  parameters:
+    projectId:
+      in: path
+      name: projectId
+      description: Project id.
+      required: true
+      schema:
+        type: string
+        format: uuid
+    featureId:
+      in: path
+      name: featureId
+      description: Feature id.
+      required: true
+      schema:
+        type: string
+        format: uuid
+    environmentId:
+      in: path
+      name: environmentId
+      description: Environment id.
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    project:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdAt:
+          type: integer
+        updatedAt:
+          type: integer
+      required:
+        - id
+        - name
+        - createdAt
+        - updatedAt
+    feature:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        technicalName:
+          type: string
+        displayName:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: integer
+        updatedAt:
+          type: integer
+      required:
+        - id
+        - projectId
+        - technicalName
+        - createdAt
+        - updatedAt
+    environment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        projectId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        createdAt:
+          type: integer
+        updatedAt:
+          type: integer
+    error:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+

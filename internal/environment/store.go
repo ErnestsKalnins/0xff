@@ -28,7 +28,7 @@ func (s Store) findAllProjectEnvironments(ctx context.Context, projectID uuid.UU
 		return nil, err
 	}
 
-	var es []environment
+	es := []environment{}
 	for rs.Next() {
 		e := environment{ProjectID: projectID}
 		if err := rs.Scan(
@@ -66,7 +66,8 @@ func (s Store) findEnvironment(ctx context.Context, id uuid.UUID) (*environment,
 	e := environment{ID: id}
 	if err := s.db.QueryRowContext(
 		ctx,
-		`SELECT project_id, name, created_at, updated_at FROM features WHERE id = ?`,
+		`SELECT project_id, name, created_at, updated_at FROM environments WHERE id = ?`,
+		id,
 	).Scan(
 		&e.ProjectID,
 		&e.Name,
@@ -85,8 +86,8 @@ func (s Store) findEnvironment(ctx context.Context, id uuid.UUID) (*environment,
 func (s Store) saveEnvironment(ctx context.Context, f environment) error {
 	_, err := s.db.ExecContext(
 		ctx,
-		`INSERT INTO environments (id, project_id, name) VALUES (?,?,?)`,
-		f.ID, f.ProjectID, f.Name,
+		`INSERT INTO environments (id, project_id, name, created_at, updated_at) VALUES (?,?,?,?,?)`,
+		f.ID, f.ProjectID, f.Name, f.CreatedAt, f.UpdatedAt,
 	)
 	return err
 }

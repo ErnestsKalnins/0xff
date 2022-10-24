@@ -3,6 +3,7 @@ package project
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,7 +21,9 @@ func (svc Service) saveProject(ctx context.Context, p project) error {
 	if err != nil {
 		return fmt.Errorf("generate id: %w", err)
 	}
-
 	p.ID = id
+
+	now := time.Now().Unix()
+	p.CreatedAt, p.UpdatedAt = now, now
 	return svc.store.saveProject(ctx, p)
 }

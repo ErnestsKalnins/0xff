@@ -1,8 +1,6 @@
 package feature
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
@@ -12,6 +10,6 @@ type feature struct {
 	TechnicalName string    `json:"technicalName"`
 	DisplayName   *string   `json:"displayName,omitempty"`
 	Description   *string   `json:"description,omitempty"`
-	CreatedAt     time.Time `json:"createdAt"`
-	UpdatedAt     time.Time `json:"updatedAt"`
+	CreatedAt     int64     `json:"createdAt"`
+	UpdatedAt     int64     `json:"updatedAt"`
 }

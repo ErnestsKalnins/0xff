@@ -3,6 +3,7 @@ package feature
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -20,7 +21,9 @@ func (svc Service) saveFeature(ctx context.Context, f feature) error {
 	if err != nil {
 		return fmt.Errorf("generate id: %w", err)
 	}
-
 	f.ID = id
+
+	now := time.Now().Unix()
+	f.CreatedAt, f.UpdatedAt = now, now
 	return svc.store.saveFeature(ctx, f)
 }

@@ -1,7 +1,7 @@
 CREATE TABLE features
 (
     id             BLOB PRIMARY KEY,
-    project_id     BLOB NOT NULL,
+    project_id     BLOB   NOT NULL,
     technical_name TEXT   NOT NULL,
     display_name   TEXT,
     description    TEXT,

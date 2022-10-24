@@ -28,7 +28,7 @@ func (s Store) findAllProjectFeatures(ctx context.Context, projectID uuid.UUID) 
 		return nil, err
 	}
 
-	var fs []feature
+	fs := []feature{}
 	for rs.Next() {
 		f := feature{ProjectID: projectID}
 		if err := rs.Scan(
@@ -68,8 +68,10 @@ func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) 
 	f := feature{ID: id}
 	if err := s.db.QueryRowContext(
 		ctx,
-		`SELECT technical_name, display_name, description, created_at, updated_at FROM features WHERE id = ?`,
+		`SELECT project_id, technical_name, display_name, description, created_at, updated_at FROM features WHERE id = ?`,
+		id,
 	).Scan(
+		&f.ProjectID,
 		&f.TechnicalName,
 		&f.DisplayName,
 		&f.Description,
@@ -88,8 +90,8 @@ func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) 
 func (s Store) saveFeature(ctx context.Context, f feature) error {
 	_, err := s.db.ExecContext(
 		ctx,
-		`INSERT INTO features (id, technical_name,display_name,description) VALUES (?,?,?,?)`,
-		f.ID, f.TechnicalName, f.DisplayName, f.Description,
+		`INSERT INTO features (id, project_id, technical_name, display_name, description, created_at, updated_at) VALUES (?,?,?,?,?,?,?)`,
+		f.ID, f.ProjectID, f.TechnicalName, f.DisplayName, f.Description, f.CreatedAt, f.UpdatedAt,
 	)
 	return err
 }

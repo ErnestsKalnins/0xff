@@ -3,6 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"flag"
+	"github.com/go-chi/cors"
+	"github.com/spf13/viper"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,7 +23,21 @@ import (
 )
 
 func main() {
-	logger := zerolog.New(os.Stderr).With().Timestamp().Logger()
+	var (
+		envFile = flag.String("env-file", "", "Path to env file containing configuration.")
+		logger  = zerolog.New(os.Stderr).With().Timestamp().Logger()
+	)
+
+	flag.Parse()
+
+	if *envFile != "" {
+		viper.SetConfigFile(*envFile)
+		if err := viper.ReadInConfig(); err != nil {
+			logger.Fatal().
+				Err(err).
+				Msg("read configuration")
+		}
+	}
 
 	db, err := sql.Open("sqlite3", config.DSN())
 	if err != nil {
@@ -49,9 +66,12 @@ func main() {
 
 	r := chi.NewRouter()
 
-	r.Use(hlog.NewHandler(logger))
+	r.Use(
+		hlog.NewHandler(logger),
+		cors.AllowAll().Handler,
+	)
 
-	r.Route("/projects", func(r chi.Router) {
+	r.Route("/api/v1/projects", func(r chi.Router) {
 		r.Get("/", projectHandler.ListProjects)
 		r.Post("/", projectHandler.SaveProject)
 
@@ -101,6 +121,10 @@ func main() {
 		}
 		close(idleConnsClosed)
 	}()
+
+	logger.Info().
+		Str("addr", server.Addr).
+		Msg("starting HTTP server")
 
 	if err := server.ListenAndServe(); err != nil {
 		logger.Fatal().
