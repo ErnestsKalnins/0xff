@@ -3,17 +3,13 @@ package main
 import (
 	"database/sql"
 	"flag"
-	"fmt"
-	"io"
-	"io/fs"
-	"os"
-	"path/filepath"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 
 	"github.com/ErnestsKalnins/0xff/pkg/config"
+	"github.com/ErnestsKalnins/0xff/pkg/migrate"
 )
 
 func main() {
@@ -43,34 +39,9 @@ func main() {
 			Msg("failed to ping database")
 	}
 
-	err = filepath.Walk("migrations", func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-
-		if info.IsDir() {
-			return nil
-		}
-
-		f, err := os.Open(path)
-		if err != nil {
-			return fmt.Errorf("open file: %w", err)
-		}
-
-		b, err := io.ReadAll(f)
-		if err != nil {
-			return fmt.Errorf("read file: %w", err)
-		}
-
-		if _, err := db.Exec(string(b)); err != nil {
-			return fmt.Errorf("execute %q migration: %w", path, err)
-		}
-
-		return nil
-	})
-	if err != nil {
+	if err := migrate.Migrate(db); err != nil {
 		log.Fatal().
 			Err(err).
-			Msg("failed to execute migrations")
+			Msg("failed to run migrations")
 	}
 }

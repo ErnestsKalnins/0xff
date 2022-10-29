@@ -96,6 +96,14 @@ func main() {
 				r.Route("/{environmentId}", func(r chi.Router) {
 					r.Get("/", environmentHandler.GetEnvironment)
 					r.Delete("/", environmentHandler.DeleteEnvironment)
+
+					r.Route("/features", func(r chi.Router) {
+						r.Get("/", featureHandler.ListFeatureStates)
+
+						r.Route("/{featureId}", func(r chi.Router) {
+							r.Put("/", featureHandler.SetFeatureState)
+						})
+					})
 				})
 			})
 		})

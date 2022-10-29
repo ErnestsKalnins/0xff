@@ -27,3 +27,18 @@ func (svc Service) saveFeature(ctx context.Context, f feature) error {
 	f.CreatedAt, f.UpdatedAt = now, now
 	return svc.store.saveFeature(ctx, f)
 }
+
+func (svc Service) setFeatureState(ctx context.Context, environmentID, featureID uuid.UUID, state featureState) error {
+	id, err := uuid.NewRandom()
+	if err != nil {
+		return fmt.Errorf("generate id: %w", err)
+	}
+
+	return svc.store.saveFeatureState(ctx, writeState{
+		ID:            id,
+		FeatureID:     featureID,
+		EnvironmentID: environmentID,
+		State:         state,
+		UpdatedAt:     time.Now().Unix(),
+	})
+}
