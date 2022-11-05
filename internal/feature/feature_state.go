@@ -134,3 +134,42 @@ func (f *featureStateTransport) Scan(src any) error {
 		return fmt.Errorf("bad featureState type: %T", v)
 	}
 }
+
+// schedule is a sum-type of all possible schedules.
+type schedule interface {
+	schedule()
+}
+
+// All possible schedule types.
+const (
+	scheduleTypeNone     = "none"
+	scheduleTypeFrom     = "from"
+	scheduleTypeTo       = "to"
+	scheduleTypeInterval = "interval"
+)
+
+// scheduleNone indicates that the feature is always set to its featureState.
+type scheduleNone struct{}
+
+func (scheduleNone) schedule() {}
+
+// scheduleFrom indicates that the feature is set to its featureState starting
+// from the contained time.
+type scheduleFrom int64
+
+func (scheduleFrom) schedule() {}
+
+// scheduleTo indicates that the feature is set to its featureState until the
+// contained time.
+type scheduleTo int64
+
+func (scheduleTo) schedule() {}
+
+// scheduleInterval indicates that the feature is set to its featureState in the
+// contained time interval.
+type scheduleInterval struct {
+	From int64
+	To   int64
+}
+
+func (scheduleInterval) schedule() {}
