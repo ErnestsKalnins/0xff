@@ -4,21 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"flag"
-	"github.com/go-chi/cors"
-	"github.com/spf13/viper"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/go-chi/chi"
+	"github.com/go-chi/cors"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
+	"github.com/spf13/viper"
 
-	"github.com/ErnestsKalnins/0xff/internal/environment"
-	"github.com/ErnestsKalnins/0xff/internal/feature"
-	"github.com/ErnestsKalnins/0xff/internal/project"
+	"github.com/ErnestsKalnins/0xff/feature/api"
+	"github.com/ErnestsKalnins/0xff/feature/data/sqlite"
 	"github.com/ErnestsKalnins/0xff/pkg/config"
 )
 
@@ -52,17 +51,8 @@ func main() {
 			Msg("ping database")
 	}
 
-	projectStore := project.NewStore(db)
-	projetService := project.NewService(projectStore)
-	projectHandler := project.NewHandler(projetService)
-
-	featureStore := feature.NewStore(db)
-	featureService := feature.NewService(featureStore)
-	featureHandler := feature.NewHandler(featureService)
-
-	environmentStore := environment.NewStore(db)
-	environmentService := environment.NewService(environmentStore)
-	environmentHandler := environment.NewHandler(environmentService)
+	store := sqlite.New(db)
+	handler := api.NewHandler(store)
 
 	r := chi.NewRouter()
 
@@ -72,36 +62,36 @@ func main() {
 	)
 
 	r.Route("/api/v1/projects", func(r chi.Router) {
-		r.Get("/", projectHandler.ListProjects)
-		r.Post("/", projectHandler.SaveProject)
+		r.Get("/", handler.ListProjects)
+		r.Post("/", handler.SaveProject)
 
 		r.Route("/{projectId}", func(r chi.Router) {
-			r.Get("/", projectHandler.GetProject)
-			r.Delete("/", projectHandler.DeleteProject)
+			r.Get("/", handler.GetProject)
+			r.Delete("/", handler.DeleteProject)
 
 			r.Route("/features", func(r chi.Router) {
-				r.Get("/", featureHandler.ListFeatures)
-				r.Post("/", featureHandler.SaveFeature)
+				r.Get("/", handler.ListFeatures)
+				r.Post("/", handler.SaveFeature)
 
 				r.Route("/{featureId}", func(r chi.Router) {
-					r.Get("/", featureHandler.GetFeature)
-					r.Delete("/", featureHandler.DeleteFeature)
+					r.Get("/", handler.GetFeature)
+					r.Delete("/", handler.DeleteFeature)
 				})
 			})
 
 			r.Route("/environments", func(r chi.Router) {
-				r.Get("/", environmentHandler.ListEnvironments)
-				r.Post("/", environmentHandler.SaveEnvironment)
+				r.Get("/", handler.ListEnvironments)
+				r.Post("/", handler.SaveEnvironment)
 
 				r.Route("/{environmentId}", func(r chi.Router) {
-					r.Get("/", environmentHandler.GetEnvironment)
-					r.Delete("/", environmentHandler.DeleteEnvironment)
+					r.Get("/", handler.GetEnvironment)
+					r.Delete("/", handler.DeleteEnvironment)
 
 					r.Route("/features", func(r chi.Router) {
-						r.Get("/", featureHandler.ListFeatureStates)
+						r.Get("/", handler.ListFeatureStates)
 
 						r.Route("/{featureId}", func(r chi.Router) {
-							r.Put("/", featureHandler.SetFeatureState)
+							r.Put("/", handler.SetFeatureState)
 						})
 					})
 				})

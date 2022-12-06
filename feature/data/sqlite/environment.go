@@ -1,24 +1,24 @@
-package environment
+package sqlite
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
+
+	"github.com/ErnestsKalnins/0xff/feature"
 )
 
-func NewStore(db *sql.DB) Store {
-	return Store{db: db}
+func newEnvironmentStore(db *sql.DB) environmentStore {
+	return environmentStore{db: db}
 }
 
-type Store struct {
+type environmentStore struct {
 	db *sql.DB
 }
 
-func (s Store) findAllProjectEnvironments(ctx context.Context, projectID uuid.UUID) ([]environment, error) {
+func (s environmentStore) FindAllProjectEnvironments(ctx context.Context, projectID uuid.UUID) ([]feature.Environment, error) {
 	rs, err := s.db.QueryContext(
 		ctx,
 		`SELECT id, name, created_at, updated_at FROM environments WHERE project_id = ?`,
@@ -28,9 +28,9 @@ func (s Store) findAllProjectEnvironments(ctx context.Context, projectID uuid.UU
 		return nil, err
 	}
 
-	es := []environment{}
+	var es []feature.Environment
 	for rs.Next() {
-		e := environment{ProjectID: projectID}
+		e := feature.Environment{ProjectID: projectID}
 		if err := rs.Scan(
 			&e.ID,
 			&e.Name,
@@ -52,18 +52,8 @@ func (s Store) findAllProjectEnvironments(ctx context.Context, projectID uuid.UU
 	return es, nil
 }
 
-type errNotFound struct {
-	id uuid.UUID
-}
-
-func (e errNotFound) Error() string {
-	return fmt.Sprintf("could not find environment by id %s", e.id)
-}
-
-func (e errNotFound) Code() int { return http.StatusNotFound }
-
-func (s Store) findEnvironment(ctx context.Context, id uuid.UUID) (*environment, error) {
-	e := environment{ID: id}
+func (s environmentStore) FindEnvironment(ctx context.Context, id uuid.UUID) (*feature.Environment, error) {
+	e := feature.Environment{ID: id}
 	if err := s.db.QueryRowContext(
 		ctx,
 		`SELECT project_id, name, created_at, updated_at FROM environments WHERE id = ?`,
@@ -75,7 +65,7 @@ func (s Store) findEnvironment(ctx context.Context, id uuid.UUID) (*environment,
 		&e.UpdatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errNotFound{id: id}
+			return nil, feature.ErrEnvironmentNotFound{ID: id}
 		}
 		return nil, err
 	}
@@ -83,16 +73,16 @@ func (s Store) findEnvironment(ctx context.Context, id uuid.UUID) (*environment,
 	return &e, nil
 }
 
-func (s Store) saveEnvironment(ctx context.Context, f environment) error {
+func (s environmentStore) SaveEnvironment(ctx context.Context, e feature.Environment) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		`INSERT INTO environments (id, project_id, name, created_at, updated_at) VALUES (?,?,?,?,?)`,
-		f.ID, f.ProjectID, f.Name, f.CreatedAt, f.UpdatedAt,
+		e.ID, e.ProjectID, e.Name, e.CreatedAt, e.UpdatedAt,
 	)
 	return err
 }
 
-func (s Store) deleteEnvironment(ctx context.Context, id uuid.UUID) error {
+func (s environmentStore) DeleteEnvironment(ctx context.Context, id uuid.UUID) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		`DELETE FROM environments WHERE id = ?`,

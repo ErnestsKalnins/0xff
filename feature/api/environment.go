@@ -1,4 +1,4 @@
-package environment
+package api
 
 import (
 	"encoding/json"
@@ -8,16 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/hlog"
 
+	"github.com/ErnestsKalnins/0xff/feature"
 	"github.com/ErnestsKalnins/0xff/pkg/render"
 )
-
-func NewHandler(service Service) Handler {
-	return Handler{service: service}
-}
-
-type Handler struct {
-	service Service
-}
 
 func (h Handler) ListEnvironments(w http.ResponseWriter, r *http.Request) {
 	projectID, err := uuid.Parse(chi.URLParam(r, "projectId"))
@@ -26,7 +19,7 @@ func (h Handler) ListEnvironments(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	es, err := h.service.store.findAllProjectEnvironments(r.Context(), projectID)
+	es, err := h.store.FindAllProjectEnvironments(r.Context(), projectID)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -46,7 +39,7 @@ func (h Handler) GetEnvironment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := h.service.store.findEnvironment(r.Context(), id)
+	f, err := h.store.FindEnvironment(r.Context(), id)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -77,7 +70,7 @@ func (h Handler) SaveEnvironment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.saveEnvironment(r.Context(), environment{
+	if err := h.saveEnvironment.Handle(r.Context(), feature.Environment{
 		ProjectID: projectID,
 		Name:      req.Name,
 	}); err != nil {
@@ -99,7 +92,7 @@ func (h Handler) DeleteEnvironment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.store.deleteEnvironment(r.Context(), id); err != nil {
+	if err := h.store.DeleteEnvironment(r.Context(), id); err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).

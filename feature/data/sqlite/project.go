@@ -1,24 +1,24 @@
-package project
+package sqlite
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
+
+	"github.com/ErnestsKalnins/0xff/feature"
 )
 
-func NewStore(db *sql.DB) Store {
-	return Store{db: db}
+func newProjectStore(db *sql.DB) projectStore {
+	return projectStore{db: db}
 }
 
-type Store struct {
+type projectStore struct {
 	db *sql.DB
 }
 
-func (s Store) findAllProjects(ctx context.Context) ([]project, error) {
+func (s projectStore) FindAllProjects(ctx context.Context) ([]feature.Project, error) {
 	rs, err := s.db.QueryContext(
 		ctx,
 		`SELECT id, name, created_at, updated_at FROM projects`,
@@ -27,9 +27,9 @@ func (s Store) findAllProjects(ctx context.Context) ([]project, error) {
 		return nil, err
 	}
 
-	ps := []project{}
+	var ps []feature.Project
 	for rs.Next() {
-		var p project
+		var p feature.Project
 		if err := rs.Scan(
 			&p.ID,
 			&p.Name,
@@ -51,20 +51,8 @@ func (s Store) findAllProjects(ctx context.Context) ([]project, error) {
 	return ps, nil
 }
 
-type errNotFound struct {
-	id uuid.UUID
-}
-
-func (e errNotFound) Error() string {
-	return fmt.Sprintf("could not find project by id %s", e.id)
-}
-
-func (e errNotFound) Code() int {
-	return http.StatusNotFound
-}
-
-func (s Store) findProject(ctx context.Context, id uuid.UUID) (*project, error) {
-	p := project{ID: id}
+func (s projectStore) FindProject(ctx context.Context, id uuid.UUID) (*feature.Project, error) {
+	p := feature.Project{ID: id}
 	if err := s.db.QueryRowContext(
 		ctx,
 		`SELECT name, created_at, updated_at FROM projects WHERE id = ?`,
@@ -75,7 +63,7 @@ func (s Store) findProject(ctx context.Context, id uuid.UUID) (*project, error) 
 		&p.UpdatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errNotFound{id: id}
+			return nil, feature.ErrProjectNotFound{ID: id}
 		}
 		return nil, err
 	}
@@ -83,7 +71,7 @@ func (s Store) findProject(ctx context.Context, id uuid.UUID) (*project, error) 
 	return &p, nil
 }
 
-func (s Store) saveProject(ctx context.Context, p project) error {
+func (s projectStore) SaveProject(ctx context.Context, p feature.Project) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		`INSERT INTO projects (id, name, created_at, updated_at) VALUES(?,?,?,?)`,
@@ -92,7 +80,7 @@ func (s Store) saveProject(ctx context.Context, p project) error {
 	return err
 }
 
-func (s Store) deleteProject(ctx context.Context, id uuid.UUID) error {
+func (s projectStore) DeleteProject(ctx context.Context, id uuid.UUID) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		`DELETE FROM projects WHERE id = ?`,

@@ -1,24 +1,24 @@
-package feature
+package sqlite
 
 import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
-	"net/http"
 
 	"github.com/google/uuid"
+
+	"github.com/ErnestsKalnins/0xff/feature"
 )
 
-func NewStore(db *sql.DB) Store {
-	return Store{db: db}
+func newFeatureStore(db *sql.DB) featureStore {
+	return featureStore{db: db}
 }
 
-type Store struct {
+type featureStore struct {
 	db *sql.DB
 }
 
-func (s Store) findAllProjectFeatures(ctx context.Context, projectID uuid.UUID) ([]feature, error) {
+func (s featureStore) FindAllProjectFeatures(ctx context.Context, projectID uuid.UUID) ([]feature.Feature, error) {
 	rs, err := s.db.QueryContext(
 		ctx,
 		`SELECT id, technical_name, display_name, description, created_at, updated_at FROM features WHERE project_id = ?`,
@@ -28,9 +28,9 @@ func (s Store) findAllProjectFeatures(ctx context.Context, projectID uuid.UUID) 
 		return nil, err
 	}
 
-	fs := []feature{}
+	var fs []feature.Feature
 	for rs.Next() {
-		f := feature{ProjectID: projectID}
+		f := feature.Feature{ProjectID: projectID}
 		if err := rs.Scan(
 			&f.ID,
 			&f.TechnicalName,
@@ -54,18 +54,8 @@ func (s Store) findAllProjectFeatures(ctx context.Context, projectID uuid.UUID) 
 	return fs, nil
 }
 
-type errNotFound struct {
-	id uuid.UUID
-}
-
-func (e errNotFound) Error() string {
-	return fmt.Sprintf("could not find feature by id %s", e.id)
-}
-
-func (e errNotFound) Code() int { return http.StatusNotFound }
-
-func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) {
-	f := feature{ID: id}
+func (s featureStore) FindFeature(ctx context.Context, id uuid.UUID) (*feature.Feature, error) {
+	f := feature.Feature{ID: id}
 	if err := s.db.QueryRowContext(
 		ctx,
 		`SELECT project_id, technical_name, display_name, description, created_at, updated_at FROM features WHERE id = ?`,
@@ -79,7 +69,7 @@ func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) 
 		&f.UpdatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errNotFound{id: id}
+			return nil, feature.ErrFeatureNotFound{ID: id}
 		}
 		return nil, err
 	}
@@ -87,7 +77,7 @@ func (s Store) findFeature(ctx context.Context, id uuid.UUID) (*feature, error) 
 	return &f, nil
 }
 
-func (s Store) saveFeature(ctx context.Context, f feature) error {
+func (s featureStore) SaveFeature(ctx context.Context, f feature.Feature) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		`INSERT INTO features (id, project_id, technical_name, display_name, description, created_at, updated_at) VALUES (?,?,?,?,?,?,?)`,
@@ -96,7 +86,7 @@ func (s Store) saveFeature(ctx context.Context, f feature) error {
 	return err
 }
 
-func (s Store) deleteFeature(ctx context.Context, id uuid.UUID) error {
+func (s featureStore) DeleteFeature(ctx context.Context, id uuid.UUID) error {
 	_, err := s.db.ExecContext(
 		ctx,
 		`DELETE FROM features WHERE id = ?`,

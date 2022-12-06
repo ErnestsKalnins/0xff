@@ -1,4 +1,4 @@
-package project
+package api
 
 import (
 	"encoding/json"
@@ -8,19 +8,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/hlog"
 
+	"github.com/ErnestsKalnins/0xff/feature"
 	"github.com/ErnestsKalnins/0xff/pkg/render"
 )
 
-func NewHandler(service Service) Handler {
-	return Handler{service: service}
-}
-
-type Handler struct {
-	service Service
-}
-
 func (h Handler) ListProjects(w http.ResponseWriter, r *http.Request) {
-	ps, err := h.service.store.findAllProjects(r.Context())
+	ps, err := h.store.FindAllProjects(r.Context())
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -40,7 +33,7 @@ func (h Handler) GetProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	p, err := h.service.store.findProject(r.Context(), id)
+	p, err := h.store.FindProject(r.Context(), id)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -65,7 +58,7 @@ func (h Handler) SaveProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.saveProject(r.Context(), project{Name: req.Name}); err != nil {
+	if err := h.saveProject.Handle(r.Context(), feature.Project{Name: req.Name}); err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).
@@ -84,7 +77,7 @@ func (h Handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.store.deleteProject(r.Context(), id); err != nil {
+	if err := h.store.DeleteProject(r.Context(), id); err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).

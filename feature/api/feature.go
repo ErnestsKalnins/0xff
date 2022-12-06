@@ -1,4 +1,4 @@
-package feature
+package api
 
 import (
 	"encoding/json"
@@ -8,16 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/rs/zerolog/hlog"
 
+	"github.com/ErnestsKalnins/0xff/feature"
 	"github.com/ErnestsKalnins/0xff/pkg/render"
 )
-
-func NewHandler(service Service) Handler {
-	return Handler{service: service}
-}
-
-type Handler struct {
-	service Service
-}
 
 func (h Handler) ListFeatures(w http.ResponseWriter, r *http.Request) {
 	projectID, err := uuid.Parse(chi.URLParam(r, "projectId"))
@@ -26,7 +19,7 @@ func (h Handler) ListFeatures(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fs, err := h.service.store.findAllProjectFeatures(r.Context(), projectID)
+	fs, err := h.store.FindAllProjectFeatures(r.Context(), projectID)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -46,7 +39,7 @@ func (h Handler) GetFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	f, err := h.service.store.findFeature(r.Context(), id)
+	f, err := h.store.FindFeature(r.Context(), id)
 	if err != nil {
 		hlog.FromRequest(r).
 			Error().
@@ -79,7 +72,7 @@ func (h Handler) SaveFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.saveFeature(r.Context(), feature{
+	if err := h.saveFeature.Handle(r.Context(), feature.Feature{
 		ProjectID:     projectID,
 		TechnicalName: req.TechnicalName,
 		DisplayName:   req.DisplayName,
@@ -103,71 +96,11 @@ func (h Handler) DeleteFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.store.deleteFeature(r.Context(), id); err != nil {
+	if err := h.store.DeleteFeature(r.Context(), id); err != nil {
 		hlog.FromRequest(r).
 			Error().
 			Err(err).
 			Msg("delete feature")
-		render.Error(w, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
-}
-
-func (h Handler) ListFeatureStates(w http.ResponseWriter, r *http.Request) {
-	environmentID, err := uuid.Parse(chi.URLParam(r, "environmentId"))
-	if err != nil {
-		render.Error(w, render.TagBadRequest(err))
-		return
-	}
-
-	ss, err := h.service.store.findAllEnvironmentFeatures(r.Context(), environmentID)
-	if err != nil {
-		hlog.FromRequest(r).
-			Error().
-			Err(err).
-			Msg("list feature states")
-		return
-	}
-
-	render.JSON(w, ss)
-}
-
-func (h Handler) SetFeatureState(w http.ResponseWriter, r *http.Request) {
-	environmentID, err := uuid.Parse(chi.URLParam(r, "environmentId"))
-	if err != nil {
-		render.Error(w, render.TagBadRequest(err))
-		return
-	}
-
-	featureID, err := uuid.Parse(chi.URLParam(r, "featureID"))
-	if err != nil {
-		render.Error(w, render.TagBadRequest(err))
-		return
-	}
-
-	var req struct {
-		State featureStateTransport `json:"state"`
-	}
-
-	dec := json.NewDecoder(r.Body)
-	dec.DisallowUnknownFields()
-	if err := dec.Decode(&req); err != nil {
-		render.Error(w, render.TagBadRequest(err))
-		return
-	}
-
-	if err := h.service.setFeatureState(
-		r.Context(),
-		environmentID,
-		featureID,
-		req.State.value,
-	); err != nil {
-		hlog.FromRequest(r).
-			Error().
-			Err(err).
-			Msg("set feature state")
 		render.Error(w, err)
 		return
 	}
