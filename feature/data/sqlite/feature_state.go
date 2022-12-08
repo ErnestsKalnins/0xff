@@ -33,7 +33,7 @@ func (s featureStateStore) FindAllEnvironmentFeatures(ctx context.Context, envir
 		f.created_at,
 		COALESCE(efs.updated_at, f.created_at) as updated_at
 	FROM features f
-		LEFT JOIN environment_feature_states efs on f.id = eft.feature_id
+		LEFT JOIN environment_feature_states efs on f.id = efs.feature_id
 `
 
 	rs, err := s.db.QueryContext(
